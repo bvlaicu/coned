@@ -11,6 +11,6 @@ Example usage::
 
     from coned import Meter
 
-    meter = Meter("701138804")
+    meter = Meter("702238804")
     energy_usage_kWh = meter.last_read()
 
