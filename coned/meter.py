@@ -28,7 +28,7 @@ class Meter(object):
                 '/cws/cned/meters/' + self.meter_id + '/usage'
             _LOGGER.debug("url = %s", url)
 
-            response = requests.get(url)
+            response = requests.get(url, timeout=10)
             _LOGGER.debug("response = %s", response)
 
             jsonResponse = response.json()
