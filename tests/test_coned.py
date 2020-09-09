@@ -16,7 +16,8 @@ def test_get_last_meter_read(event_loop):
     meter = Meter(
         email=os.getenv("EMAIL"),
         password=os.getenv("PASSWORD"),
-        mfa_answer=os.getenv("MFA_ANSWER"),
+        mfa_type=Meter.MFA_TYPE_TOTP,
+        mfa_secret=os.getenv("MFA_SECRET"),
         account_id=os.getenv("ACCOUNT_ID"),
         meter_id=os.getenv("METER_NUM"))
     val, uom = event_loop.run_until_complete(meter.last_read())
@@ -27,7 +28,8 @@ def test_get_last_meter_read(event_loop):
 #         meter = Meter(
 #             email=os.getenv("INVALID_EMAIL"),
 #             password=os.getenv("INVALID_PASSWORD"),
-#             mfa_answer=os.getenv("INVALID_MFA_ANSWER"),
+#             mfa_type='TOTP',
+#             mfa_secret=os.getenv("INVALID_MFA_SECRET"),
 #             account_id=os.getenv("INVALID_ACCOUNT_ID"),
 #             meter_id=os.getenv("INVALID_METER_ID"))
 #         val, uom = event_loop.run_until_complete(meter.last_read())
