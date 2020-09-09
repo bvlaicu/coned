@@ -5,6 +5,7 @@ import asyncio
 from pyppeteer import launch
 import os
 import json
+import pyotp
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -19,12 +20,16 @@ class Meter(object):
     Attributes:
         email: A string representing the email address of the account
         password: A string representing the password of the account
-        mfa_answer: A string representing the multiple factor authorization answer for the account
+        mfa_type: Meter.MFA_TYPE_SECURITY_QUESTION or Meter.MFA_TYPE_TOTP
+        mfa_secret: A string representing the multiple factor authorization secret
         account_id: A string representing the account's id
         meter_id: A string representing the meter's id
     """
 
-    def __init__(self, email, password, mfa_answer, account_id, meter_id, loop=None):
+    MFA_TYPE_SECURITY_QUESTION = 'SECURITY_QUESTION'
+    MFA_TYPE_TOTP = 'TOTP'
+
+    def __init__(self, email, password, mfa_type, mfa_secret, account_id, meter_id, loop=None):
         """Return a meter object whose meter id is *meter_id*"""
         self.email = email
         if self.email is None:
@@ -39,7 +44,14 @@ class Meter(object):
         self.mfa_answer = mfa_answer
         if self.mfa_answer is None:
             raise MeterError("Error initializing ConEd meter data - mfa_answer is missing")
-        #_LOGGER.debug("ConEd mfa_answer = %s", self.mfa_answer.replace(self.mfa_answer[:8], '*'))
+        _LOGGER.debug("ConEd mfa_type = %s", self.mfa_type)
+        if self.mfa_type not in [Meter.MFA_TYPE_SECURITY_QUESTION, Meter.MFA_TYPE_TOTP]:
+            raise MeterError("Error initializing Oru meter data - unsupported mfa_type %s", self.mfa_type)
+
+        self.mfa_secret = mfa_secret
+        if self.mfa_secret is None:
+            raise MeterError("Error initializing Oru meter data - mfa_secret is missing")
+        #_LOGGER.debug("ConEd mfa_secret = %s", self.mfa_secret.replace(self.mfa_secret[:8], '*'))
 
         self.account_id = account_id
         if self.account_id is None:
@@ -104,7 +116,11 @@ class Meter(object):
         # await page.screenshot({'path': 'coned1.png'})
 
         # Enter in 2 factor auth code (see README for details)
-        await page.type("#form-login-mfa-code", self.mfa_answer)
+        mfa_code = self.mfa_secret
+        if self.mfa_type == self.MFA_TYPE_TOTP:
+            mfa_code = pyotp.TOTP(self.mfa_secret).now()
+        #_LOGGER.debug("ConEd mfa_code = %s", mfa_code)
+        await page.type("#form-login-mfa-code", mfa_code)
         # await page.screenshot({'path': 'coned2.png'})
         await page.click(".js-login-new-device-form .button")
         # Wait for authentication to complete
