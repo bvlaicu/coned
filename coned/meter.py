@@ -32,7 +32,9 @@ class Meter(object):
     MFA_TYPE_SECURITY_QUESTION = 'SECURITY_QUESTION'
     MFA_TYPE_TOTP = 'TOTP'
     SITE_CONED = 'coned'
+    DATA_SITE_CONED = 'cned'
     SITE_ORU = 'oru'
+    DATA_SITE_ORU = 'oru'
 
     def __init__(self, email, password, mfa_type, mfa_secret, account_uuid, meter_number, site='coned', loop=None, browser_path=None):
         """Return a meter object whose meter id is *meter_number*"""
@@ -63,12 +65,16 @@ class Meter(object):
             raise MeterError("Error initializing meter data - account_uuid is missing")
         # _LOGGER.debug("account_uuid = %s", self.account_uuid.replace(self.account_uuid[:20], '*'))
 
-        self.meter_number = meter_number
+        self.meter_number = meter_number.lstrip("0")
         if self.meter_number is None:
             raise MeterError("Error initializing meter data - meter_number is missing")
         # _LOGGER.debug("meter_number = %s", self.meter_number.replace(self.meter_number[:5], '*'))
 
         self.site = site
+        if site == Meter.SITE_CONED:
+            self.data_site = Meter.DATA_SITE_CONED
+        elif site == Meter.SITE_ORU:
+            self.data_site = Meter.DATA_SITE_ORU
         _LOGGER.debug("site = %s", self.site)
         if self.site not in [Meter.SITE_CONED, Meter.SITE_ORU]:
             raise MeterError("Error initializing meter data - unsupported site %s", self.site)
@@ -152,7 +158,7 @@ class Meter(object):
 
         # Access the API using your newly acquired authentication cookies!
         api_page = await browser.newPage()
-        api_url = 'https://' + self.site + '.opower.com/ei/edge/apis/cws-real-time-ami-v1/cws/' + self.site + '/accounts/' + self.account_uuid + '/meters/' + self.meter_number + '/usage'
+        api_url = 'https://' + self.data_site + '.opower.com/ei/edge/apis/cws-real-time-ami-v1/cws/' + self.data_site + '/accounts/' + self.account_uuid + '/meters/' + self.meter_number + '/usage'
         await api_page.goto(api_url)
         # await api_page.screenshot({'path': 'meter4.png'})
 
