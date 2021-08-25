@@ -97,9 +97,8 @@ class Meter(object):
             jsonResponse = json.loads(self.raw_data)
             lastRead = None
             for read in jsonResponse['reads']:
-                if read['value'] is None:
-                    break
-                lastRead = read
+                if read['value'] is not None:
+                    lastRead = read
             _LOGGER.debug("lastRead = %s", lastRead)
 
             self.startTime = lastRead['startTime']
