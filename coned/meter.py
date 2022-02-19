@@ -36,7 +36,7 @@ class Meter(object):
     SITE_ORU = 'oru'
     DATA_SITE_ORU = 'oru'
 
-    def __init__(self, email, password, mfa_type, mfa_secret, account_uuid, meter_number, site='coned', loop=None, browser_path=None):
+    def __init__(self, email, password, mfa_type, mfa_secret, account_uuid, meter_number, account_number=None, site='coned', loop=None, browser_path=None):
         """Return a meter object whose meter id is *meter_number*"""
         self.email = email
         if self.email is None:
@@ -70,6 +70,8 @@ class Meter(object):
             raise MeterError("Error initializing meter data - meter_number is missing")
         # _LOGGER.debug("meter_number = %s", self.meter_number.replace(self.meter_number[:5], '*'))
 
+        self.account_number = account_number
+
         self.site = site
         if site == Meter.SITE_CONED:
             self.data_site = Meter.DATA_SITE_CONED
@@ -96,6 +98,8 @@ class Meter(object):
             # (i.e. last not None)
             jsonResponse = json.loads(self.raw_data)
             lastRead = None
+            if 'error' in jsonResponse:
+                raise MeterError(jsonResponse['error']['details'])
             for read in jsonResponse['reads']:
                 if read['value'] is None:
                     break
@@ -117,7 +121,7 @@ class Meter(object):
         browser_launch_config = {
             "defaultViewport": {"width": 1920, "height": 1080},
             "dumpio": True,
-            "args": ["--no-sandbox"]}
+            "args": ["--no-sandbox", "--disable-gpu", "--disable-software-rasterizer"]}
         if self.browser_path is not None:
             browser_launch_config['executablePath'] = self.browser_path
         _LOGGER.debug("browser_launch_config = %s", browser_launch_config)
@@ -156,11 +160,20 @@ class Meter(object):
         await page.waitFor(sleep)
         # await page.screenshot({'path': 'meter3.png'})
 
+        if self.account_number:
+            account_page_url = 'https://www.' + self.site + '.com/en/accounts-billing/dashboard?account=' + self.account_number
+            print(account_page_url)
+            await page.goto(account_page_url)
+            # await page.screenshot({'path': 'meter4.png'})
+            sleep = 30000
+            _LOGGER.debug("Waiting for = %s millis", sleep)
+            await page.waitFor(sleep)
+
         # Access the API using your newly acquired authentication cookies!
         api_page = await browser.newPage()
         api_url = 'https://' + self.data_site + '.opower.com/ei/edge/apis/cws-real-time-ami-v1/cws/' + self.data_site + '/accounts/' + self.account_uuid + '/meters/' + self.meter_number + '/usage'
         await api_page.goto(api_url)
-        # await api_page.screenshot({'path': 'meter4.png'})
+        # await api_page.screenshot({'path': 'meter5.png'})
 
         data_elem = await api_page.querySelector('pre')
         self.raw_data = await api_page.evaluate('(el) => el.textContent', data_elem)
