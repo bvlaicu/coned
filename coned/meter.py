@@ -101,9 +101,8 @@ class Meter(object):
             if 'error' in jsonResponse:
                 raise MeterError(jsonResponse['error']['details'])
             for read in jsonResponse['reads']:
-                if read['value'] is None:
-                    break
-                lastRead = read
+                if read['value'] is not None:
+                    lastRead = read
             _LOGGER.debug("lastRead = %s", lastRead)
 
             self.startTime = lastRead['startTime']
