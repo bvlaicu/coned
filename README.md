@@ -10,7 +10,7 @@ For MFA Security Question, to set up your MFA secret (answer), log into coned.co
 
 For MFA TOTP, choose Google Authenticator, choose a device type and when presented with the QR code, click on "Can't scan?". It should provide you with the MFA secret.
 
-To find the account uuid, log into coned.com (or oru.com) then use the browser developer tools to search for `uuid` in the network tab. 
+To find the account uuid, log into coned.com (or oru.com) then use the browser developer tools to search for a GET request to `opower.com` with the word `utilityAccounts` that looks like: `https://cned.opower.com/ei/edge/apis/DataBrowser-v1/cws/utilities/cned/utilityAccounts/ACCOUNT_UUID/reads?aggregateType=bill&includeEnhancedBilling=false&includeMultiRegisterData=false`. (note the URL would have the word 'oru' for oru).
 
 The meter number can be found on your utility bill.
 
