@@ -11,16 +11,18 @@ The meter number can be found on your utility bill.
 
 Example usage::
 
+    import asyncio
     from coned import Meter
 
     meter = Meter(
         email="myemail@email.com",
         password="myconedpassword",
-        Meter.TOTP,
+        mfa_type=Meter.TOTP,
         mfa_secret="myconedmfasecret",
         account_uuid="cd754d65-5380-11e8-2307-2656615779bf",
         meter_number="703437804",
-        Meter.CONED)
+        site=Meter.CONED)
 
+    event_loop = asyncio.get_event_loop()
     startTime, endTime, value, unit_of_measurement = event_loop.run_until_complete(meter.last_read())
 
