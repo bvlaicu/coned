@@ -40,7 +40,7 @@ setup(
     license='Apache Software License',
     author='Bogdan Vlaicu',
     tests_require=['pytest'],
-    install_requires=['requests'],
+    install_requires=['requests', 'pyppeteer', 'pyotp'],
     cmdclass={'test': PyTest},
     author_email='bogdanvlaicu@yahoo.com',
     description='Python client for ConEdison smart energy meters',
