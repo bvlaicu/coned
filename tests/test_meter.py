@@ -5,6 +5,7 @@ from coned import MeterError
 import pytest
 import asyncio
 import os
+import logging
 
 @pytest.fixture
 def event_loop():
@@ -23,6 +24,13 @@ def test_get_last_meter_read(event_loop):
         site=os.getenv("SITE"),
         # browser_path="/Users/bvlaicu/Library/Application Support/pyppeteer/local-chromium/588429/chrome-mac/Chromium.app/Contents/MacOS/Chromium"
     )
+
+    meter._LOGGER.setLevel(logging.DEBUG)
+
+    logging.getLogger('websockets.protocol').setLevel(logging.INFO)
+    logging.getLogger('pyppeteer.connection').setLevel(logging.INFO)
+    logging.getLogger('websockets').setLevel(logging.INFO)
+
     startTime, endTime, val, uom = event_loop.run_until_complete(meter.last_read())
     assert isinstance(val, float)
 

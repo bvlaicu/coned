@@ -123,7 +123,7 @@ class Meter(object):
             try:
                 os.remove(filePath)
             except:
-                print("Error while deleting file : ", filePath)
+                self._LOGGER.debug("Error while deleting file : ", filePath)
 
 
         browser_launch_config = {
@@ -137,12 +137,16 @@ class Meter(object):
         browser = await launch(browser_launch_config)
         page = await browser.newPage()
 
-        await page.goto('https://www.' + self.site + '.com/en/login', {'waitUntil' : 'domcontentloaded'})
+        # page.on('request', lambda req: asyncio.ensure_future(request_interception(req)))
+        # page.on('response', lambda res: asyncio.ensure_future(resp(res)))
+
+        await page.goto('https://www.' + self.site + '.com/en/login', {'waitUntil': 'domcontentloaded', 'timeout': 10000})
         # sleep = 8000
         # self._LOGGER.debug("Waiting for = %s millis", sleep)
         # await page.waitFor(sleep)
         element = await page.querySelector('#form-login-email')
         await page.screenshot({'path': 'meter1-1.png'})
+        self._LOGGER.debug('meter1-1')
 
         await page.type("#form-login-email", self.email)
         await page.type("#form-login-password", self.password)
@@ -159,43 +163,75 @@ class Meter(object):
         #     return
         await fetch_element(page, '#form-login-mfa-code')
         await page.screenshot({'path': 'meter2-1.png'})
+        self._LOGGER.debug('meter2-1')
 
         # Enter in 2 factor auth code (see README for details)
         mfa_code = self.mfa_secret
         if self.mfa_type == self.MFA_TYPE_TOTP:
             mfa_code = pyotp.TOTP(self.mfa_secret).now()
-        #_LOGGER.debug("mfa_code = %s", mfa_code)
+        #self._LOGGER.debug("mfa_code = %s", mfa_code)
         await page.type("#form-login-mfa-code", mfa_code)
         await page.screenshot({'path': 'meter2-2.png'})
         await page.click(".js-login-new-device-form .button")
         # Wait for authentication to complete
-        await page.waitForNavigation()
-        # sleep = 5000
-        # self._LOGGER.debug("Waiting for = %s millis", sleep)
-        # await page.waitFor(sleep)
+        # await page.waitForNavigation()
+        sleep = 5000
+        self._LOGGER.debug("Waiting for = %s millis", sleep)
+        await page.waitFor(sleep)
         # await fetch_element(page, '#mainContent > div > div.dashboard-header-wrapper.coned-tabs--visible.js-module > div.dashboard-header.dashboard-header--oru.content-gutter > div.coned-tabs.js-coned-tabs-dropdown.js-coned-tabs.coned-tabs--oru > div:nth-child(2) > button > span')
         await page.screenshot({'path': 'meter3-1.png'})
+        self._LOGGER.debug('meter3-1')
+
+        page.on('response', lambda res: asyncio.ensure_future(resp(res, self)))
 
         if self.account_number:
             account_page_url = 'https://www.' + self.site + '.com/en/accounts-billing/dashboard?account=' + self.account_number
-            print(account_page_url)
+            self._LOGGER.debug(account_page_url)
             await page.goto(account_page_url)
-            # await page.screenshot({'path': 'meter4.png'})
+            await page.screenshot({'path': 'meter3-0.png'})
+            self._LOGGER.debug('meter3-0')
             sleep = 30000
-            _LOGGER.debug("Waiting for = %s millis", sleep)
+            self._LOGGER.debug("Waiting for = %s millis", sleep)
+            await page.waitFor(sleep)
+        else:
+            usage_page_url = 'https://www.' + self.site + '.com/en/accounts-billing/dashboard?tab1=billingandusage-1&tab3=sectionRealTimeData-3'
+            self._LOGGER.debug(usage_page_url)
+            await page.goto(usage_page_url, {'waitUntil': 'domcontentloaded', 'timeout': 10000})
+            # await page.waitForNavigation()
+            await page.screenshot({'path': 'meter3-1.png'})
+            self._LOGGER.debug('meter3-1')
+            sleep = 30000
+            self._LOGGER.debug("Waiting for = %s millis", sleep)
             await page.waitFor(sleep)
 
-        # Access the API using your newly acquired authentication cookies!
-        api_page = await browser.newPage()
-        api_url = 'https://' + self.data_site + '.opower.com/ei/edge/apis/cws-real-time-ami-v1/cws/' + self.data_site + '/accounts/' + self.account_uuid + '/meters/' + self.meter_number + '/usage'
-        await api_page.goto(api_url)
-        await api_page.screenshot({'path': 'meter3-2.png'})
+        # # Access the API using your newly acquired authentication cookies!
+        # # api_page = await browser.newPage()
+        # api_url = 'https://' + self.data_site + '.opower.com/ei/edge/apis/cws-real-time-ami-v1/cws/' + self.data_site + '/accounts/' + self.account_uuid + '/meters/' + self.meter_number + '/usage'
+        # await page.goto(api_url)
+        # await page.screenshot({'path': 'meter4-1.png'})
+        self._LOGGER.debug('meter4-1')
 
-        data_elem = await api_page.querySelector('pre')
-        self.raw_data = await api_page.evaluate('(el) => el.textContent', data_elem)
+        self._LOGGER.debug(f"raw_data = {raw_data}")
+
+        self.raw_data = raw_data
+
+        # data_elem = await page.querySelector('pre')
+        # self.raw_data = await page.evaluate('(el) => el.textContent', data_elem)
         self._LOGGER.info(self.raw_data)
 
         await browser.close()
+
+
+async def resp(res, meter):
+    res.__setattr__('_allowInterception', True)
+    if 'cws-real-time-ami-v1' in res.url and 'usage' in res.url:
+        print(f"  res.url: {res.url}")
+        print(f"  res.status: {res.status}")
+        global raw_data
+        raw_data = await res.text()
+        meter._LOGGER.debug(f"  res.text: {raw_data}")
+    pass
+
 
 async def fetch_element(page, selector, max_tries=10):
     tries = 0
