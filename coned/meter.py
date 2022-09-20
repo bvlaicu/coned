@@ -105,7 +105,6 @@ class Meter(object):
             if 'error' in jsonResponse:
                 self._LOGGER.info("got JSON error back = %s", jsonResponse['error']['details'])
                 raise MeterError(jsonResponse['error']['details'])
-            self._LOGGER.info("got JSON response containing reads")
             for read in jsonResponse['reads']:
                 if read['value'] is not None:
                     availableReads.append(read)
@@ -222,7 +221,7 @@ class Meter(object):
         # # api_page = await browser.newPage()
         # api_url = 'https://' + self.data_site + '.opower.com/ei/edge/apis/cws-real-time-ami-v1/cws/' + self.data_site + '/accounts/' + self.account_uuid + '/meters/' + self.meter_number + '/usage'
         # await page.goto(api_url)
-        await page.screenshot({'path': 'meter4-1.png'})
+        # await page.screenshot({'path': 'meter4-1.png'})
         self._LOGGER.debug('meter4-1')
 
         self._LOGGER.debug(f"raw_data = {raw_data}")
