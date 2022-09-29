@@ -38,8 +38,6 @@ class Meter(object):
     def __init__(self, email, password, mfa_type, mfa_secret, account_uuid, meter_number, account_number=None, site='coned', loop=None, browser_path=None):
         self._LOGGER = logging.getLogger(__name__)
 
-        logging.basicConfig(level=logging.INFO)
-
         """Return a meter object whose meter id is *meter_number*"""
         self.email = email
         if self.email is None:
