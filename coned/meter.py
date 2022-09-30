@@ -88,8 +88,8 @@ class Meter(object):
         self.browser_path = browser_path
         self._LOGGER.debug("browser_path = %s", self.browser_path)
 
-    async def last_read(self):
-        """Return the last meter read value and unit of measurement"""
+    async def all_reads(self):
+        """Return all available meter read values and unit of measurement"""
         try:
             asyncio.set_event_loop(self.loop)
             asyncio.get_event_loop().create_task(self.browse())
@@ -98,24 +98,35 @@ class Meter(object):
             # parse the return reads and extract the most recent one
             # (i.e. last not None)
             jsonResponse = json.loads(self.raw_data)
-            lastRead = None
+
+            availableReads = []
             if 'error' in jsonResponse:
+                self._LOGGER.info("got JSON error back = %s", jsonResponse['error']['details'])
                 raise MeterError(jsonResponse['error']['details'])
             for read in jsonResponse['reads']:
                 if read['value'] is not None:
-                    lastRead = read
-            self._LOGGER.debug("lastRead = %s", lastRead)
+                    availableReads.append(read)
 
-            self.startTime = lastRead['startTime']
-            self.endTime = lastRead['endTime']
-            self.last_read_val = lastRead['value']
-            self.unit_of_measurement = jsonResponse['unit']
+            parsed_reads = []
+            for read in availableReads:
+                this_parsed_read = {}
+                this_parsed_read['start_time'] = read['startTime']
+                this_parsed_read['end_time'] = read['endTime']
+                this_parsed_read['value'] = read['value']
+                this_parsed_read['unit_of_measurement'] = jsonResponse['unit']
+                parsed_reads.append(this_parsed_read)
+                self._LOGGER.info("got read = %s %s %s %s", this_parsed_read['start_time'], this_parsed_read['end_time'],
+                    this_parsed_read['value'], this_parsed_read['unit_of_measurement'])
 
-            self._LOGGER.info("last read = %s %s %s %s", self.startTime, self.endTime, self.last_read_val, self.unit_of_measurement)
-
-            return self.startTime, self.endTime, self.last_read_val, self.unit_of_measurement
+            return parsed_reads
         except:
             raise MeterError("Error requesting meter data")
+
+    async def last_read(self):
+        """Return the last meter read value and unit of measurement"""
+        all_available_reads = await self.all_reads()
+        last_read = all_available_reads[-1]
+        return last_read['start_time'], last_read['end_time'], last_read['value'], last_read['unit_of_measurement']
 
     async def browse(self):
         screenshotFiles = glob.glob('meter*.png')
@@ -217,7 +228,7 @@ class Meter(object):
 
         # data_elem = await page.querySelector('pre')
         # self.raw_data = await page.evaluate('(el) => el.textContent', data_elem)
-        self._LOGGER.info(self.raw_data)
+        #self._LOGGER.info(self.raw_data)
 
         await browser.close()
 
