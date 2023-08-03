@@ -27,7 +27,7 @@ meter = Meter(
     mfa_secret="myconedmfasecret",
     account_uuid="cd754d65-5380-11e8-2307-2656615779bf",
     meter_number="703437804",
-    site=Meter.CONED)
+    site=Meter.SITE_CONED)
 
 event_loop = asyncio.get_event_loop()
 
